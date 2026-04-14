@@ -11,8 +11,6 @@ export default function RegisterPage() {
   const router = useRouter();
   const [isPending, setIsPending] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  
-  // Estado para notificaciones elegantes
   const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
   const [formData, setFormData] = useState({
@@ -24,7 +22,6 @@ export default function RegisterPage() {
     confirmPassword: ""
   });
 
-  // Limpiar notificaciones después de 5 segundos
   useEffect(() => {
     if (notification) {
       const timer = setTimeout(() => setNotification(null), 5000);
@@ -32,7 +29,6 @@ export default function RegisterPage() {
     }
   }, [notification]);
 
-  // --- VALIDACIONES ---
   const isNameValid = useMemo(() => /^[a-zA-ZÀ-ÿ\s]{3,}$/.test(formData.fullName), [formData.fullName]);
   const isEmailValid = useMemo(() => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email), [formData.email]);
   const isPhoneValid = useMemo(() => /^\d{10,15}$/.test(formData.phone), [formData.phone]);
@@ -49,7 +45,6 @@ export default function RegisterPage() {
     setFormData({ ...formData, [field]: value });
   };
 
-  // --- REGISTRO PROFESIONAL ---
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canRegister) return;
@@ -62,11 +57,11 @@ export default function RegisterPage() {
         email: formData.email,
         password: formData.password,
         options: {
-          // Estos metadatos serán capturados por el Trigger en Supabase
           data: {
             full_name: formData.fullName,
             phone: formData.phone,
             whatsapp: formData.whatsapp,
+            role: "usuario"
           }
         }
       });
@@ -78,7 +73,6 @@ export default function RegisterPage() {
         message: "¡Registro exitoso! Revisa tu correo para verificar la cuenta."
       });
 
-      // Redirigir al inicio tras una breve pausa para que lea el mensaje
       setTimeout(() => router.push("/"), 3000);
 
     } catch (error: any) {
@@ -96,7 +90,6 @@ export default function RegisterPage() {
       title="Registro de Ingeniero" 
       subtitle="Alta de nuevo operador en el Sistema de Diagnóstico V3.0"
     >
-      {/* BANNER DE NOTIFICACIÓN INTEGRADO */}
       {notification && (
         <div className={`mb-6 p-4 rounded-2xl flex items-center gap-3 animate-in fade-in zoom-in duration-300 border ${
           notification.type === 'success' 
@@ -109,8 +102,6 @@ export default function RegisterPage() {
       )}
 
       <form className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-700" onSubmit={handleRegister}>
-        
-        {/* IDENTIDAD LEGAL */}
         <div className="space-y-1.5">
           <div className="flex justify-between items-center ml-1">
             <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Identidad Legal</label>
@@ -133,7 +124,6 @@ export default function RegisterPage() {
           </div>
         </div>
 
-        {/* CORREO */}
         <div className="space-y-1.5">
           <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 ml-1">Comunicación Digital</label>
           <div className="relative group">
@@ -149,7 +139,6 @@ export default function RegisterPage() {
           </div>
         </div>
 
-        {/* TELÉFONOS */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 ml-1">Móvil</label>
@@ -179,7 +168,6 @@ export default function RegisterPage() {
           </div>
         </div>
 
-        {/* CONTRASEÑAS */}
         <div className="space-y-4">
           <div className="space-y-1.5">
             <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 ml-1">Clave de Acceso</label>
@@ -219,7 +207,6 @@ export default function RegisterPage() {
           </div>
         </div>
 
-        {/* BOTÓN REGISTRO */}
         <button 
           type="submit"
           disabled={!canRegister}
