@@ -209,8 +209,8 @@ export default function LoginPage() {
           className="group flex items-center justify-between p-4 rounded-2xl border-2 border-dashed border-zinc-200 dark:border-zinc-800 hover:border-blue-600/50 hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-all"
         >
           <div className="flex flex-col items-start">
-            <span className="text-[11px] font-black uppercase text-zinc-900 dark:text-white">Registrar Ingeniero</span>
-            <span className="text-[10px] text-zinc-500 font-medium">Acceso total a la red técnica</span>
+            <span className="text-[11px] font-black uppercase text-zinc-900 dark:text-white">Registrarse</span>
+            <span className="text-[10px] text-zinc-500 font-medium">Acceso total</span>
           </div>
           <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all">
             <ArrowRight size={18} />
