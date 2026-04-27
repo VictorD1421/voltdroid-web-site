@@ -2,12 +2,14 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
+  // 1. Creamos una respuesta base
   let response = NextResponse.next({
     request: {
       headers: request.headers,
     },
   })
 
+  // 2. Inicializamos el cliente de Supabase
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -17,38 +19,29 @@ export async function middleware(request: NextRequest) {
           return request.cookies.get(name)?.value
         },
         set(name: string, value: string, options: CookieOptions) {
+          // Actualizamos la petición y la respuesta simultáneamente
           request.cookies.set({ name, value, ...options })
           response = NextResponse.next({
             request: { headers: request.headers },
           })
-          response.cookies.set({ 
-            name, 
-            value, 
-            ...options,
-            sameSite: 'lax',
-            secure: process.env.NODE_ENV === 'production'
-          })
+          response.cookies.set({ name, value, ...options })
         },
         remove(name: string, options: CookieOptions) {
           request.cookies.set({ name, value: '', ...options })
           response = NextResponse.next({
             request: { headers: request.headers },
           })
-          response.cookies.set({ 
-            name, 
-            value: '', 
-            ...options,
-            sameSite: 'lax',
-            secure: process.env.NODE_ENV === 'production'
-          })
+          response.cookies.set({ name, value: '', ...options })
         },
       },
     }
   )
 
+  // 3. Obtenemos el usuario (getUser es fundamental para seguridad en Server Side)
   const { data: { user } } = await supabase.auth.getUser()
   const path = request.nextUrl.pathname
 
+  // Lógica de Redirección
   if (path.startsWith('/tracking')) {
     if (!user) {
       return NextResponse.redirect(new URL('/login', request.url))
@@ -68,11 +61,23 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // Si ya está logueado e intenta ir al login, lo mandamos al panel
+  if (user && path === '/login') {
+    return NextResponse.redirect(new URL('/admin', request.url))
+  }
+
   return response
 }
 
 export const config = {
   matcher: [
+    /*
+     * Match todas las rutas excepto:
+     * - api (rutas de API)
+     * - _next/static (archivos estáticos)
+     * - _next/image (optimización de imágenes)
+     * - favicon.ico (icono del sitio)
+     */
     '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
 }
