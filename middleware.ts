@@ -34,11 +34,11 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // USAR getUser() en lugar de getSession() para mayor seguridad en el Middleware
+  // Usamos getUser para una validación real del lado del servidor
   const { data: { user } } = await supabase.auth.getUser()
   const path = request.nextUrl.pathname
 
-  // 1. PROTECCIÓN DE TRACKING
+  // 1. PROTECCIÓN DE TRACKING (Estatus)
   if (path.startsWith('/tracking')) {
     if (!user) {
       return NextResponse.redirect(new URL('/login', request.url))
@@ -51,21 +51,13 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/login', request.url))
     }
 
-    // Consultamos el perfil
-    const { data: profile, error } = await supabase
-      .from('users')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
+    // Priorizamos los metadatos del usuario (app_metadata es donde Supabase suele guardar roles)
+    // Esto es mucho más rápido que consultar la tabla 'users'
+    const role = (user.app_metadata?.role || user.user_metadata?.role || "").toLowerCase()
     const rolesAutorizados = ['admin', 'superusuario', 'engineer', 'superuser']
-    
-    // LOG DE DEPURACIÓN (Míralo en tu terminal de VS Code, no en el navegador)
-    console.log(`Middleware Auth - Usuario: ${user.email}, Rol DB: ${profile?.role}`);
 
-    if (error || !profile || !rolesAutorizados.includes(profile.role?.toLowerCase())) {
-      // Si no es admin, lo mandamos al home. 
-      // IMPORTANTE: Si te manda al login es porque 'user' es null arriba.
+    if (!rolesAutorizados.includes(role)) {
+      // Si tiene sesión pero NO es admin, lo mandamos al inicio, NO al login
       return NextResponse.redirect(new URL('/', request.url))
     }
   }
@@ -76,6 +68,7 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     '/admin/:path*', 
-    '/tracking/:path*'
+    '/tracking/:path*',
+    '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
 }
