@@ -34,31 +34,38 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  const { data: { session } } = await supabase.auth.getSession()
+  // USAR getUser() en lugar de getSession() para mayor seguridad en el Middleware
+  const { data: { user } } = await supabase.auth.getUser()
   const path = request.nextUrl.pathname
 
-  // 1. PROTECCIÓN DE TRACKING (Cualquier usuario logueado)
+  // 1. PROTECCIÓN DE TRACKING
   if (path.startsWith('/tracking')) {
-    if (!session) {
+    if (!user) {
       return NextResponse.redirect(new URL('/login', request.url))
     }
   }
 
-  // 2. PROTECCIÓN DE ADMIN (Solo roles autorizados)
+  // 2. PROTECCIÓN DE ADMIN
   if (path.startsWith('/admin')) {
-    if (!session) {
+    if (!user) {
       return NextResponse.redirect(new URL('/login', request.url))
     }
 
-    const { data: profile } = await supabase
+    // Consultamos el perfil
+    const { data: profile, error } = await supabase
       .from('users')
       .select('role')
-      .eq('id', session.user.id)
+      .eq('id', user.id)
       .single()
 
     const rolesAutorizados = ['admin', 'superusuario', 'engineer', 'superuser']
     
-    if (!profile || !rolesAutorizados.includes(profile.role?.toLowerCase())) {
+    // LOG DE DEPURACIÓN (Míralo en tu terminal de VS Code, no en el navegador)
+    console.log(`Middleware Auth - Usuario: ${user.email}, Rol DB: ${profile?.role}`);
+
+    if (error || !profile || !rolesAutorizados.includes(profile.role?.toLowerCase())) {
+      // Si no es admin, lo mandamos al home. 
+      // IMPORTANTE: Si te manda al login es porque 'user' es null arriba.
       return NextResponse.redirect(new URL('/', request.url))
     }
   }
@@ -66,10 +73,9 @@ export async function middleware(request: NextRequest) {
   return response
 }
 
-// ACTUALIZACIÓN CRÍTICA DEL MATCHER
 export const config = {
   matcher: [
     '/admin/:path*', 
-    '/tracking/:path*' // Agregamos tracking al matcher para que el middleware lo procese
+    '/tracking/:path*'
   ],
 }
