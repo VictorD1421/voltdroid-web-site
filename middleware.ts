@@ -40,11 +40,13 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Lógica de protección de rutas
-  const isAuthPage = request.nextUrl.pathname.startsWith('/login') || 
-                     request.nextUrl.pathname.startsWith('/register')
+  const url = request.nextUrl.clone()
+  const isHomePage = url.pathname === '/'
+  const isAuthPage = url.pathname.startsWith('/login') || url.pathname.startsWith('/register')
+  
+  const isPublicPage = isHomePage || isAuthPage
 
-  if (!user && !isAuthPage) {
+  if (!user && !isPublicPage) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
