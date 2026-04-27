@@ -3,14 +3,15 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTheme } from "next-themes";
 import { 
-  Sun, Moon, Menu, X, ArrowUpRight, LogIn, UserPlus, 
+  Sun, Moon, Menu, X, ArrowUpRight, 
   User, LogOut, ChevronDown, ShieldCheck, Mail, Phone, 
   LayoutDashboard, Save, Edit2, MessageSquare
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/client";
 import { useRouter } from "next/navigation";
+import { AuthChangeEvent, Session, User as SupabaseUser } from "@supabase/supabase-js";
 
 interface NavLink {
   name: string;
@@ -19,16 +20,22 @@ interface NavLink {
   adminLink?: boolean;
 }
 
-export default function Navbar() {
+interface NavbarProps {
+  user?: SupabaseUser | null;
+}
+
+export default function Navbar({ user: initialUser }: NavbarProps) {
   const router = useRouter();
+  const supabase = createClient();
   const { theme, setTheme } = useTheme();
+  
   const [mounted, setMounted] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<any>(initialUser || null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -59,7 +66,7 @@ export default function Navbar() {
         console.error("Error logging admin access:", err);
       }
     }
-  }, []);
+  }, [supabase]);
 
   const fetchUserData = useCallback(async (authUser: any) => {
     if (!authUser) return;
@@ -87,16 +94,16 @@ export default function Navbar() {
       console.error("Error cargando perfil:", err);
       setUser(authUser);
     }
-  }, [logAdminAccess]);
+  }, [logAdminAccess, supabase]);
 
   useEffect(() => {
     setMounted(true);
     
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) fetchUserData(session.user);
-    });
+    if (initialUser) {
+      fetchUserData(initialUser);
+    }
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
       if (session?.user) {
         fetchUserData(session.user);
       } else {
@@ -118,7 +125,7 @@ export default function Navbar() {
       window.removeEventListener("scroll", controlNavbar);
       subscription.unsubscribe();
     };
-  }, [lastScrollY, fetchUserData]);
+  }, [lastScrollY, fetchUserData, initialUser, supabase.auth]);
 
   const rawRole = (user?.db?.role || user?.user_metadata?.role || "cliente").toLowerCase();
   const currentRole = rawRole.charAt(0).toUpperCase() + rawRole.slice(1);
@@ -188,6 +195,7 @@ export default function Navbar() {
     await supabase.auth.signOut();
     setIsProfileOpen(false);
     setIsMobileMenuOpen(false);
+    router.refresh();
     router.push("/login");
   };
 
@@ -246,7 +254,7 @@ export default function Navbar() {
                   className="flex items-center gap-3 pl-2 pr-4 py-2 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl hover:border-blue-500 transition-all group"
                 >
                   <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-lg font-bold">
-                    {user.db?.full_name?.charAt(0) || <User size={20} />}
+                    {user.db?.full_name?.charAt(0) || user.user_metadata?.full_name?.charAt(0) || <User size={20} />}
                   </div>
                   <div className="text-left">
                     <p className="text-[9px] font-black uppercase text-blue-500 leading-none mb-1">

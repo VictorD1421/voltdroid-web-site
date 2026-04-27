@@ -5,38 +5,37 @@ import Services from "@/components/Services";
 import WhyUs from "@/components/WhyUs";
 import Footer from "@/components/Footer";
 import Contact from "@/components/Contact";
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 
-export default function Home() {
+export default async function Home() {
+  const cookieStore = await cookies();
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value
+        },
+      },
+    }
+  )
+
+  const { data: { user } } = await supabase.auth.getUser();
+
   return (
-    /* bg-white dark:bg-black: Controla el fondo de toda la pantalla.
-       transition-colors: Asegura que el cambio de tema sea suave.
-    */
     <div className="flex flex-col min-h-screen font-sans bg-white dark:bg-black transition-colors duration-300">
-      
-      {/* Navegación fija con soporte de blur y modo oscuro */}
-      <Navbar />
-      
+      <Navbar user={user} />
       <main className="flex-grow">
-        {/* Sección Principal (Imagen/Texto de entrada) */}
         <Hero />
-        
-        {/* Sección Histórica, Misión y Visión (Componente Separado) */}
         <About />
-        
-        {/* Cuadrícula de servicios (ECUs, Llaves, etc.) */}
         <Services />
-
-       
-
-        {/* Sección de propuesta de valor (Por qué elegirnos) */}
         <WhyUs />
-
-         <Contact />
+        <Contact />
       </main>
-      
-      {/* Footer con links y contacto en Maracay */}
       <Footer />
-
     </div>
   );
 }

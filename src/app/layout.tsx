@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { ThemeProvider } from "@/components/ThemeProvider"; // Asegúrate de que la ruta sea correcta
+import { ThemeProvider } from "@/components/ThemeProvider";
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 import "./globals.css";
 
 const geistSans = Geist({
@@ -18,18 +20,30 @@ export const metadata: Metadata = {
   description: "Consulta el estado de tu equipo en tiempo real",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value
+        },
+      },
+    }
+  )
+
+  await supabase.auth.getUser();
+
   return (
-    /* 1. suppressHydrationWarning es necesario para next-themes */
     <html lang="es" className="h-full antialiased" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} min-h-full transition-colors duration-300`}>
-        {/* 2. Envolvemos con ThemeProvider. 
-            'attribute="class"' permite usar clases como dark:bg-black 
-        */}
         <ThemeProvider 
           attribute="class" 
           defaultTheme="system" 
